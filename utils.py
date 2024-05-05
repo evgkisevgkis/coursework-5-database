@@ -1,4 +1,5 @@
 import psycopg2
+import requests
 
 
 def create_database(params, db_name) -> None:
@@ -15,7 +16,23 @@ def create_database(params, db_name) -> None:
 
 def get_vacancies(companies: list) -> list[dict]:
     """Получение вакансий через HH API"""
-    pass
+    data = []
+    companies = companies
+    for company in companies:
+        page = 0
+        query_param = {'text': company,
+                       'search_field': 'company_name',
+                       'page': page,
+                       'per_page': 100}
+        req = requests.get('https://api.hh.ru/vacancies', query_param)
+        pages_count = req.json().get('pages', 0)
+        while page <= pages_count:
+            req = requests.get('https://api.hh.ru/vacancies', query_param)
+            vacancies = req.json()['items']
+            for i in vacancies:
+                data.append(i)
+            page += 1
+    return data
 
 
 def insert_data(data: list[dict]):
