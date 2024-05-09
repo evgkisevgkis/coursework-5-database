@@ -11,7 +11,22 @@ def create_database(params, db_name) -> None:
     cur.execute(f"DROP DATABASE IF EXISTS {db_name}")
     cur.execute(f"CREATE DATABASE {db_name}")
 
+    cur.close()
     conn.close()
+
+    with psycopg2.connect(dbname=db_name, **params) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                    CREATE TABLE vacancies(
+                    vacancy_id SERIAL PRIMARY KEY,
+                    vacancy_name VARCHAR NOT NULL,
+                    company_name VARCHAR(50) NOT NULL,
+                    salary INT,
+                    url VARCHAR,
+                    city VARCHAR,
+                    description TEXT
+                    )
+                    """)
 
 
 def get_vacancies(companies: list) -> list[dict]:
@@ -35,9 +50,22 @@ def get_vacancies(companies: list) -> list[dict]:
     return data
 
 
-def insert_data(data: list[dict]):
+def insert_data(cur, data: list[dict]):
     """Вставка данных о вакансиях в базу данных"""
-    pass
+    for item in data:
+        vacancy = {'name': item['name'],
+                   'employer': item['employer']['name'],
+                   'salary': 0 if item['salary'] is None else item.get('salary', {'from': 0})['from'],
+                   'url': item['alternate_url'],
+                   'city': None if item['address'] is None else item['address'].get('city'),
+                   'description': item['snippet'].get('responsibility')}
+        cur.execute(
+            """
+            INSERT INTO vacancies(vacancy_name, company_name, salary, url, city, description)
+            VALUES (%s, %s, %s, %s, %s, %s)""",
+            (vacancy['name'], vacancy['employer'], vacancy['salary'], vacancy['url'],
+             vacancy['city'], vacancy['description'])
+        )
 
 
 class DBManager:
