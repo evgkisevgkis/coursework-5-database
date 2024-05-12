@@ -70,26 +70,57 @@ def insert_data(cur, data: list[dict]):
 
 class DBManager:
     """Класс для работы с данными в БД"""
+    def __init__(self, db_name, params):
+        self.db_name = db_name
+        self.params = params
+
+    def execute_query(self, query):
+        def wrapper(*args, **kwargs):
+            try:
+                with (psycopg2.connect(dbname=self.db_name, **self.params) as conn):
+                    with conn.cursor() as cur:
+                        cur.execute(query)
+                        return cur.fetchall()
+            except Exception as e:
+                return e
+        return wrapper()
+
     def get_companies_and_vacancies_count(self) -> list[tuple[str, int]]:
         """Получает список всех компаний и количество вакансий у каждой компании"""
-        pass
+        query = """SELECT company_name, COUNT(*)
+                    FROM vacancies
+                    GROUP BY company_name"""
+        return self.execute_query(query)
 
     def get_all_vacancies(self) -> list[dict]:
         """Получает список всех вакансий с указанием названия компании,
          названия вакансии и зарплаты и ссылки на вакансию"""
-        pass
+        query = """SELECT company_name, vacancy_name, salary, url
+                            FROM vacancies"""
+        return self.execute_query(query)
 
     def get_avg_salary(self) -> float:
         """Получает среднюю зарплату по вакансиям"""
-        pass
+        query = """SELECT AVG(salary)
+                    FROM vacancies
+                    WHERE salary != 0"""
+        return self.execute_query(query)
 
     def get_vacancies_with_higher_salary(self) -> list[dict]:
         """Получает список всех вакансий, у которых зарплата выше средней по всем вакансиям"""
-        pass
+        query = """SELECT *
+                FROM vacancies
+                WHERE salary > (SELECT AVG(salary)
+                                FROM vacancies
+                                WHERE salary != 0)"""
+        return self.execute_query(query)
 
     def get_vacancies_with_keyword(self, keyword) -> list[dict]:
         """Получает список всех вакансий, в названии которых содержатся переданные в метод слова"""
-        pass
+        query = f"""SELECT * 
+                    FROM vacancies 
+                    WHERE vacancy_name LIKE '%{keyword}%'"""
+        return self.execute_query(query)
 
 
 def dbmanager_interaction() -> None:
