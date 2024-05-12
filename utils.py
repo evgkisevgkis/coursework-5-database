@@ -1,5 +1,6 @@
 import psycopg2
 import requests
+import pprint
 
 
 def create_database(params, db_name) -> None:
@@ -123,6 +124,20 @@ class DBManager:
         return self.execute_query(query)
 
 
-def dbmanager_interaction() -> None:
+def dbmanager_interaction(dbman: DBManager) -> None:
     """Взаимодействие пользователя с экзепляром класса для работы с данными"""
-    pass
+    actions = [
+        (1, 'Получ список всех компаний и количество вакансий у каждой компании',
+         lambda: dbman.get_companies_and_vacancies_count()),
+        (2, 'Получает список всех вакансий с указанием названия компании, названия вакансии '
+            'и зарплаты и ссылки на вакансию', lambda: dbman.get_all_vacancies()),
+        (3, 'Получает среднюю зарплату по вакансиям', lambda: dbman.get_avg_salary()),
+        (4, 'Получает список всех вакансий, у которых зарплата выше средней по всем вакансиям',
+         lambda: dbman.get_vacancies_with_higher_salary()),
+        (5, 'Получает список всех вакансий, в названии которых содержатся переданные в метод слова',
+         lambda: dbman.get_vacancies_with_keyword(input('Введите ключевое слово: '))),
+    ]
+    print('Вот, что я могу Вам предложить:')
+    pprint.pprint(actions)
+    user_choice = input('Пожалуйста, выберите действие: ')
+    return pprint.pprint(actions[int(user_choice) - 1][2]())
